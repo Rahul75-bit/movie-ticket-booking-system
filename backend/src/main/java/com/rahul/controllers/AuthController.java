@@ -73,7 +73,8 @@ public class AuthController {
                 user.getRole().name(),
                 user.getEmail(),
                 user.getName(),
-                user.getUserId()
+                user.getUserId(),
+                user.getPhone()
         );
 
         return ResponseEntity.ok(authResponse);

@@ -42,62 +42,7 @@ public class BookingService {
 
 	    @Autowired
 	    private UniversalResponse response;
-
-//	    public ResponseEntity<ResponseWrapper> createBooking(
-//	            Long userId,
-//	            Long showId,
-//	            List<Long> seatIds
-//	    ) {
-//	        Optional<User> userOptional = userRepository.findById(userId);
-//
-//	        if (userOptional.isEmpty()) {
-//	            return response.send("User not found with id " + userId, null, HttpStatus.NOT_FOUND);
-//	        }
-//
-//	        Optional<MovieShow> showOptional = movieShowRepository.findById(showId);
-//
-//	        if (showOptional.isEmpty()) {
-//	            return response.send("Show not found with id " + showId, null, HttpStatus.NOT_FOUND);
-//	        }
-//
-//	        MovieShow movieShow = showOptional.get();
-//
-//	        double totalAmount = movieShow.getTicketPrice() * seatIds.size();
-//
-//	        Booking booking = new Booking();
-//	        booking.setUser(userOptional.get());
-//	        booking.setMovieShow(movieShow);
-//	        booking.setBookingDate(LocalDateTime.now());
-//	        booking.setTotalAmount(totalAmount);
-//	        booking.setBookingStatus("CONFIRMED");
-//
-//	        Booking savedBooking = bookingRepository.save(booking);
-//
-//	        for (Long seatId : seatIds) {
-//	            Optional<Seat> seatOptional = seatRepository.findById(seatId);
-//
-//	            if (seatOptional.isEmpty()) {
-//	                return response.send("Seat not found with id " + seatId, null, HttpStatus.NOT_FOUND);
-//	            }
-//
-//	            Seat seat = seatOptional.get();
-//
-//	            if (Boolean.TRUE.equals(seat.getIsBooked())) {
-//	                return response.send("Seat already booked: " + seat.getSeatNumber(), null, HttpStatus.BAD_REQUEST);
-//	            }
-//
-//	            seat.setIsBooked(true);
-//	            seatRepository.save(seat);
-//
-//	            BookingSeat bookingSeat = new BookingSeat();
-//	            bookingSeat.setBooking(savedBooking);
-//	            bookingSeat.setSeat(seat);
-//
-//	            bookingSeatRepository.save(bookingSeat);
-//	        }
-//
-//	        return response.send("Booking confirmed successfully", savedBooking, HttpStatus.OK);
-//	    }
+   
 	    
 	    public ResponseEntity<ResponseWrapper> createBooking(
 	            Long userId,
@@ -179,10 +124,18 @@ public class BookingService {
 	        return response.send("Booking not found with id " + bookingId, null, HttpStatus.NOT_FOUND);
 	    }
 
+//	    public ResponseEntity<ResponseWrapper> getBookingsByUserId(Long userId) {
+//	        return response.send(
+//	                "User bookings found successfully",
+//	                bookingRepository.findByUserUserId(userId),
+//	                HttpStatus.OK
+//	        );
+//	    }
+	    
 	    public ResponseEntity<ResponseWrapper> getBookingsByUserId(Long userId) {
 	        return response.send(
 	                "User bookings found successfully",
-	                bookingRepository.findByUserUserId(userId),
+	                bookingRepository.findByUserUserIdAndHiddenByUserFalse(userId),
 	                HttpStatus.OK
 	        );
 	    }
@@ -202,5 +155,24 @@ public class BookingService {
 	        Booking updatedBooking = bookingRepository.save(booking);
 
 	        return response.send("Booking cancelled successfully", updatedBooking, HttpStatus.OK);
+	    }
+	    
+	    public ResponseEntity<ResponseWrapper> hideBooking(Long bookingId) {
+	        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
+
+	        if (bookingOptional.isEmpty()) {
+	            return response.send("Booking not found with id " + bookingId, null, HttpStatus.NOT_FOUND);
+	        }
+
+	        Booking booking = bookingOptional.get();
+
+	        if (!"CANCELLED".equals(booking.getBookingStatus())) {
+	            return response.send("Only cancelled bookings can be removed", null, HttpStatus.BAD_REQUEST);
+	        }
+
+	        booking.setHiddenByUser(true);
+	        bookingRepository.save(booking);
+
+	        return response.send("Booking removed successfully", booking, HttpStatus.OK);
 	    }
 }

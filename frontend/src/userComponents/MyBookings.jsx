@@ -15,7 +15,7 @@ export default function MyBookings() {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-      }
+      },
     );
 
     let data = await response.json();
@@ -31,7 +31,7 @@ export default function MyBookings() {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-      }
+      },
     );
 
     let data = await response.json();
@@ -44,7 +44,7 @@ export default function MyBookings() {
           ...booking,
           seats,
         };
-      })
+      }),
     );
 
     setBookings(bookingWithSeats);
@@ -58,7 +58,7 @@ export default function MyBookings() {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
         },
-      }
+      },
     );
 
     if (response.ok) {
@@ -66,16 +66,30 @@ export default function MyBookings() {
         prev.map((booking) =>
           booking.bookingId === bookingId
             ? { ...booking, bookingStatus: "CANCELLED" }
-            : booking
-        )
+            : booking,
+        ),
       );
     }
   };
 
-  let removeCard = (bookingId) => {
-    setBookings((prev) =>
-      prev.filter((booking) => booking.bookingId !== bookingId)
+ 
+
+  let removeCard = async (bookingId) => {
+    let response = await fetch(
+      `http://localhost:8080/api/v1/bookings/hide/${bookingId}`,
+      {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+        },
+      },
     );
+
+    if (response.ok) {
+      setBookings((prev) =>
+        prev.filter((booking) => booking.bookingId !== bookingId),
+      );
+    }
   };
 
   return (

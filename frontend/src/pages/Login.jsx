@@ -34,12 +34,14 @@ export default function Login() {
       }
 
       let data = await response.json();
+      
 
       localStorage.setItem("token", data.token);
       localStorage.setItem("role", data.role);
       localStorage.setItem("email", data.email);
       localStorage.setItem("name", data.name);
       localStorage.setItem("userId", data.userId || "");
+      localStorage.setItem("phone", data.phone);
 
       if (data.role === "ADMIN") {
         navigate("/admin/movies");
@@ -113,7 +115,13 @@ export default function Login() {
         </button>
 
         <p className="text-center mt-3">
-          New user? <Link to="/register" style={{ color: "#c084fc", textDecoration: "none" }}>Register</Link>
+          New user?{" "}
+          <Link
+            to="/register"
+            style={{ color: "#c084fc", textDecoration: "none" }}
+          >
+            Register
+          </Link>
         </p>
       </form>
     </div>

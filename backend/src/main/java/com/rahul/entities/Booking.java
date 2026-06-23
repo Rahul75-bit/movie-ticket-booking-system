@@ -28,6 +28,8 @@ public class Booking {
 	
 	private LocalDateTime bookingDate;
 	
+	private Boolean hiddenByUser = false;
+	
 	@ManyToOne
 	@JoinColumn(name = "user_id")
 	private User user;

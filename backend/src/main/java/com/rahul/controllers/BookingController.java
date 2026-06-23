@@ -52,5 +52,11 @@ public class BookingController {
 	    public ResponseEntity<ResponseWrapper> cancelBooking(@PathVariable Long bookingId) {
 	        return bookingService.cancelBooking(bookingId);
 	    }
+	    
+	    // Cancelled booking ko My Bookings se permanently hide karne ke liye
+	    @PutMapping("/hide/{bookingId}")
+	    public ResponseEntity<ResponseWrapper> hideBooking(@PathVariable Long bookingId) {
+	        return bookingService.hideBooking(bookingId);
+	    }
 
 }

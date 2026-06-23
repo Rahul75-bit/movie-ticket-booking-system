@@ -11,5 +11,5 @@ import com.rahul.entities.Booking;
 @Repository
 public interface BookingRepository extends JpaRepository<Booking,Long> {
 
-	 List<Booking> findByUserUserId(Long userId);
+	List<Booking> findByUserUserIdAndHiddenByUserFalse(Long userId);
 }

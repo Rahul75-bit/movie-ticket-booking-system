@@ -11,7 +11,6 @@ export default function SeatSelection() {
 
   let [seats, setSeats] = useState([]);
   let [selectedSeats, setSelectedSeats] = useState([]);
-  const [showPaymentModal, setShowPaymentModal] = useState(false);
 
   useEffect(() => {
     if (show?.screen?.screenId) {
@@ -31,18 +30,14 @@ export default function SeatSelection() {
       );
 
       if (!response.ok) {
-        console.log("Seat API Status:", response.status);
         setSeats([]);
         return;
       }
 
       let data = await response.json();
 
-      console.log("SEATS API RESPONSE:", data);
-
       setSeats(data.data || []);
     } catch (error) {
-      console.log("Seat fetch error:", error);
       setSeats([]);
     }
   };
@@ -57,6 +52,40 @@ export default function SeatSelection() {
     } else {
       setSelectedSeats([...selectedSeats, seat]);
     }
+  };
+
+  let handlePayment = () => {
+    if (selectedSeats.length === 0) {
+      alert("Please select at least one seat");
+      return;
+    }
+
+    let totalAmount = selectedSeats.length * show.ticketPrice;
+
+    let options = {
+      key: "YOUR_KEY",
+      amount: totalAmount * 100,
+      currency: "INR",
+      name: "MovieZone",
+      description: `${movie.title} Ticket Booking`,
+
+      handler: function (response) {
+        bookTicket();
+      },
+
+      prefill: {
+        name: localStorage.getItem("name"),
+        email: localStorage.getItem("email"),
+        contact: "9876543210",
+      },
+
+      theme: {
+        color: "#8b5cf6",
+      },
+    };
+
+    let razorpay = new window.Razorpay(options);
+    razorpay.open();
   };
 
   let bookTicket = async () => {
@@ -102,8 +131,6 @@ export default function SeatSelection() {
       },
     });
   };
-
-  console.log("SEATS STATE:", seats);
 
   if (!show || !movie) {
     return (
@@ -206,103 +233,11 @@ export default function SeatSelection() {
             <h4>Total Amount</h4>
             <p>₹{selectedSeats.length * show.ticketPrice}</p>
 
-        
-            <button
-              className="btn book-btn mt-3"
-              onClick={() => {
-                if (selectedSeats.length === 0) {
-                  alert("Please select at least one seat");
-                  return;
-                }
-                setShowPaymentModal(true);
-              }}
-            >
+            <button className="btn book-btn mt-3" onClick={handlePayment}>
               Proceed to Payment
             </button>
           </div>
         </div>
-
-        {showPaymentModal && (
-          <div
-            className="modal d-block"
-            style={{
-              backgroundColor: "rgba(0,0,0,0.85)",
-              backdropFilter: "blur(8px)",
-            }}
-          >
-            <div className="modal-dialog modal-dialog-centered">
-              <div
-                className="modal-content"
-                style={{
-                  background: "linear-gradient(135deg, #111827, #1e1b4b)",
-                  color: "white",
-                  borderRadius: "24px",
-                  border: "1px solid rgba(255,255,255,0.15)",
-                  padding: "10px",
-                }}
-              >
-                <div className="modal-header border-secondary">
-                  <h4 className="modal-title fw-bold">💳 Scan & Pay</h4>
-
-                  <button
-                    type="button"
-                    className="btn-close btn-close-white"
-                    onClick={() => setShowPaymentModal(false)}
-                  ></button>
-                </div>
-
-                <div className="modal-body text-center">
-                  <h5 className="fw-bold">{movie.title}</h5>
-
-                  <p className="mb-1">
-                    Seats: {selectedSeats.map((s) => s.seatNumber).join(", ")}
-                  </p>
-
-                  <p className="mb-1">
-                    Show: {show.showDate} - {show.showTime}
-                  </p>
-
-                  <h3 className="my-3">
-                    Total: ₹{selectedSeats.length * show.ticketPrice}
-                  </h3>
-
-                  <img
-                    src="/QR-CODE.jpeg"
-                    alt="Payment QR Code"
-                    style={{
-                      width: "260px",
-                      height: "260px",
-                      objectFit: "contain",
-                      background: "white",
-                      padding: "14px",
-                      borderRadius: "18px",
-                      margin: "15px 0",
-                    }}
-                  />
-
-                  <p style={{ color: "#cbd5e1" }}>
-                    Scan this QR code and complete the payment.
-                  </p>
-
-                  <button
-                    className="btn w-100 mt-3"
-                    style={{
-                      background: "linear-gradient(135deg, #22c55e, #16a34a)",
-                      color: "white",
-                      border: "none",
-                      borderRadius: "14px",
-                      padding: "12px",
-                      fontWeight: "700",
-                    }}
-                    onClick={bookTicket}
-                  >
-                    I Have Paid - Confirm Booking
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
       </div>
 
       <style>
