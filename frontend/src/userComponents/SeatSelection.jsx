@@ -63,7 +63,7 @@ export default function SeatSelection() {
     let totalAmount = selectedSeats.length * show.ticketPrice;
 
     let options = {
-      key: "YOUR_KEY",
+      key: "YOUR_RAZORPAY_KEY",
       amount: totalAmount * 100,
       currency: "INR",
       name: "MovieZone",

@@ -30,6 +30,11 @@ public class Booking {
 	
 	private Boolean hiddenByUser = false;
 	
+	private String email;
+	private String paymentStatus;
+	
+	
+	
 	@ManyToOne
 	@JoinColumn(name = "user_id")
 	private User user;

@@ -2,41 +2,71 @@ import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
 export default function TheaterSelection() {
-  let [theaters, setTheaters] = useState([]);
-  let [searchParams] = useSearchParams();
-  let navigate = useNavigate();
+  const [theaters, setTheaters] = useState([]);
+  const [error, setError] = useState("");
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
 
-  let cityFromUrl = searchParams.get("city");
+  const cityFromUrl = searchParams.get("city");
+  const city = cityFromUrl || localStorage.getItem("city");
 
-  let [selectedCity, setSelectedCity] = useState(
-    cityFromUrl || localStorage.getItem("city") || "Select Location",
+  const [selectedCity, setSelectedCity] = useState(
+    city || "Select Location"
   );
-
-  let city = cityFromUrl || localStorage.getItem("city");
 
   useEffect(() => {
     if (city) {
-      fetchTheaters();
+      fetchTheaters(city);
     } else {
       setTheaters([]);
     }
   }, [city]);
 
-  const fetchTheaters = async () => {
+  const fetchTheaters = async (cityName) => {
     try {
+      setError("");
+
+      const token = localStorage.getItem("token");
+
+      if (!token) {
+        setError("Please login again.");
+        navigate("/login");
+        return;
+      }
+
       const response = await fetch(
-        `http://localhost:8080/api/v1/theaters/city/${city}`,
+        `http://localhost:8080/api/v1/theaters/city/${cityName}`,
         {
+          method: "GET",
           headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
           },
-        },
+        }
       );
+
+      if (response.status === 401) {
+        localStorage.clear();
+        setError("Session expired. Please login again.");
+        navigate("/login");
+        return;
+      }
+
+      if (response.status === 403) {
+        setError("You are not allowed to access theaters.");
+        return;
+      }
+
+      if (!response.ok) {
+        setError(`Something went wrong. Status: ${response.status}`);
+        return;
+      }
 
       const data = await response.json();
       setTheaters(data.data || []);
     } catch (error) {
       console.log(error);
+      setError("Unable to fetch theaters.");
     }
   };
 
@@ -50,7 +80,6 @@ export default function TheaterSelection() {
     <div
       style={{
         minHeight: "100vh",
-        background: "#020617",
         color: "white",
         padding: "50px",
         background:
@@ -97,13 +126,19 @@ export default function TheaterSelection() {
         </div>
       </div>
 
+      {error && (
+        <div className="alert alert-danger text-center">
+          {error}
+        </div>
+      )}
+
       {!city && (
         <div className="text-center mt-5">
           <h3>Please select a location to view theaters.</h3>
         </div>
       )}
 
-      {city && theaters.length === 0 && (
+      {city && theaters.length === 0 && !error && (
         <div className="text-center mt-5">
           <h3>No theaters found in {city}.</h3>
         </div>

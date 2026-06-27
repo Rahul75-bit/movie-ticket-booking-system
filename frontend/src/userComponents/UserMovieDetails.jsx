@@ -4,6 +4,7 @@ import { Link, useNavigate, useParams } from "react-router-dom";
 export default function UserMovieDetails() {
   let { id } = useParams();
   let navigate = useNavigate();
+
   let [movie, setMovie] = useState(null);
   let [reviews, setReviews] = useState([]);
   let [shows, setShows] = useState([]);
@@ -12,6 +13,20 @@ export default function UserMovieDetails() {
     rating: "",
     comment: "",
   });
+
+  let getToken = () => localStorage.getItem("token");
+
+  let authHeaders = () => {
+    let token = getToken();
+
+    if (!token) {
+      return {};
+    }
+
+    return {
+      Authorization: `Bearer ${token}`,
+    };
+  };
 
   useEffect(() => {
     getMovieById();
@@ -22,10 +37,13 @@ export default function UserMovieDetails() {
   async function getMovieById() {
     try {
       let response = await fetch(`http://localhost:8080/api/v1/movies/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: authHeaders(),
       });
+
+      if (!response.ok) {
+        console.log("Movie API Status:", response.status);
+        return;
+      }
 
       let data = await response.json();
       setMovie(data.data);
@@ -37,14 +55,27 @@ export default function UserMovieDetails() {
   async function getReviewsByMovieId() {
     try {
       let response = await fetch(`http://localhost:8080/api/v1/reviews/${id}`, {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
+        headers: authHeaders(),
       });
+
+      if (!response.ok) {
+        console.log("Reviews API Status:", response.status);
+        setReviews([]);
+        return;
+      }
+
       let data = await response.json();
-      setReviews(data);
+
+      if (Array.isArray(data)) {
+        setReviews(data);
+      } else if (Array.isArray(data.data)) {
+        setReviews(data.data);
+      } else {
+        setReviews([]);
+      }
     } catch (error) {
       console.log(error);
+      setReviews([]);
     }
   }
 
@@ -53,16 +84,17 @@ export default function UserMovieDetails() {
       let response = await fetch(
         `http://localhost:8080/api/v1/admin/shows/movie/${id}`,
         {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        },
+          headers: authHeaders(),
+        }
       );
 
+      if (!response.ok) {
+        console.log("Shows API Status:", response.status);
+        setShows([]);
+        return;
+      }
+
       let result = await response.json();
-
-      console.log("Shows Response:", result);
-
       setShows(Array.isArray(result.data) ? result.data : []);
     } catch (error) {
       console.log(error);
@@ -80,29 +112,71 @@ export default function UserMovieDetails() {
   async function submitReview(e) {
     e.preventDefault();
 
-    await fetch(`http://localhost:8080/api/v1/reviews/${id}`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        Authorization: `Bearer ${localStorage.getItem("token")}`,
+    let token = getToken();
+
+    if (!token) {
+      alert("Please login to submit your review.");
+      navigate("/login");
+      return;
+    }
+
+    try {
+      let response = await fetch(`http://localhost:8080/api/v1/reviews/${id}`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({
+          rating: Number(reviewData.rating),
+          comment: reviewData.comment,
+        }),
+      });
+
+      if (!response.ok) {
+        alert("Review submit failed.");
+        return;
+      }
+
+      setReviewData({
+        rating: "",
+        comment: "",
+      });
+
+      getMovieById();
+      getReviewsByMovieId();
+    } catch (error) {
+      console.log(error);
+    }
+  }
+
+  function handleSelectShow(show) {
+    let token = getToken();
+
+    if (!token) {
+      alert("Please login to book tickets.");
+      navigate("/login", {
+        state: {
+          redirectTo: `/movie/${id}`,
+        },
+      });
+      return;
+    }
+
+    navigate(`/seat-selection/${show.showId}`, {
+      state: {
+        show,
+        movie,
       },
-      body: JSON.stringify({
-        rating: Number(reviewData.rating),
-        comment: reviewData.comment,
-      }),
     });
-
-    setReviewData({
-      rating: "",
-      comment: "",
-    });
-
-    getMovieById();
-    getReviewsByMovieId();
   }
 
   if (!movie) {
-    return <h2>Loading movie details...</h2>;
+    return (
+      <h2 style={{ color: "white", background: "#111827", minHeight: "100vh" }}>
+        Loading movie details...
+      </h2>
+    );
   }
 
   return (
@@ -176,7 +250,6 @@ export default function UserMovieDetails() {
           </div>
         </div>
 
-        {/* AVAILABLE SHOWS */}
         <div className="review-section mt-5">
           <h2 className="fw-bold mb-4">🎟 Available Shows</h2>
 
@@ -184,7 +257,6 @@ export default function UserMovieDetails() {
             <p>No shows available for this movie.</p>
           ) : (
             <div className="row g-3">
-              {console.log("SHOWS STATE:", shows)}
               {shows.map((show) => (
                 <div className="col-md-4" key={show.showId}>
                   <div className="show-card">
@@ -204,20 +276,14 @@ export default function UserMovieDetails() {
                     <button
                       className="btn w-100"
                       style={{
-                        background: "linear-gradient(135deg, #ec4899, #8b5cf6)",
+                        background:
+                          "linear-gradient(135deg, #ec4899, #8b5cf6)",
                         color: "white",
                         borderRadius: "12px",
                         border: "none",
                         fontWeight: "600",
                       }}
-                      onClick={() => {
-                        navigate(`/seat-selection/${show.showId}`, {
-                          state: {
-                            show: show,
-                            movie: movie,
-                          },
-                        });
-                      }}
+                      onClick={() => handleSelectShow(show)}
                     >
                       Select Show
                     </button>

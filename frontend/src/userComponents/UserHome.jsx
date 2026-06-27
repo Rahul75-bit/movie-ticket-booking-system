@@ -7,6 +7,9 @@ export default function UserHome() {
   let [searchText, setSearchText] = useState("");
   let navigate = useNavigate();
 
+  const token = localStorage.getItem("token");
+  const userName = localStorage.getItem("name");
+
   useEffect(() => {
     getAllMovies();
   }, []);
@@ -21,12 +24,13 @@ export default function UserHome() {
 
   async function getAllMovies() {
     try {
-      // let response = await fetch("http://localhost:8080/api/v1/movies");
-      let response = await fetch("http://localhost:8080/api/v1/movies", {
-        headers: {
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-      });
+      let response = await fetch("http://localhost:8080/api/v1/movies");
+
+      if (!response.ok) {
+        console.log("Movies API Status:", response.status);
+        return;
+      }
+
       let data = await response.json();
       setMovies(data.data || []);
     } catch (error) {
@@ -200,22 +204,69 @@ export default function UserHome() {
             🎟 My Bookings
           </Link>
 
-          <button
-            className="btn px-4 py-2 fw-semibold"
-            style={{
-              background: "linear-gradient(135deg, #ef4444, #991b1b)",
-              color: "white",
-              borderRadius: "14px",
-              border: "none",
-              boxShadow: "0 10px 25px rgba(239,68,68,0.35)",
-            }}
-            onClick={() => {
-              localStorage.clear();
-              window.location.href = "/";
-            }}
-          >
-            🚪 Logout
-          </button>
+          <div className="dropdown">
+            <button
+              className="btn dropdown-toggle"
+              type="button"
+              data-bs-toggle="dropdown"
+              style={{
+                background: "rgba(255,255,255,0.08)",
+                color: "white",
+                border: "1px solid rgba(255,255,255,0.18)",
+                borderRadius: "14px",
+                padding: "10px 18px",
+                fontWeight: "600",
+              }}
+            >
+              👤 Account
+            </button>
+
+            <ul
+              className="dropdown-menu dropdown-menu-end"
+              style={{
+                background: "#111827",
+                border: "1px solid rgba(255,255,255,0.12)",
+                borderRadius: "14px",
+                overflow: "hidden",
+              }}
+            >
+              {!token ? (
+                <>
+                  <li>
+                    <Link className="dropdown-item text-light" to="/login">
+                      Login
+                    </Link>
+                  </li>
+
+                  <li>
+                    <Link className="dropdown-item text-light" to="/register">
+                      Register
+                    </Link>
+                  </li>
+                </>
+              ) : (
+                <>
+                  <li>
+                    <span className="dropdown-item text-light">
+                      Welcome, {userName}
+                    </span>
+                  </li>
+
+                  <li>
+                    <button
+                      className="dropdown-item text-danger"
+                      onClick={() => {
+                        localStorage.clear();
+                        window.location.href = "/";
+                      }}
+                    >
+                      Logout
+                    </button>
+                  </li>
+                </>
+              )}
+            </ul>
+          </div>
         </div>
       </nav>
       {/* navbar section ends here */}
@@ -381,8 +432,6 @@ export default function UserHome() {
                       alt={movie.title}
                       height="350"
                       className="card-img-top"
-                     
-
                       style={{
                         height: "320px",
                         width: "100%",
@@ -470,12 +519,34 @@ export default function UserHome() {
           }
         `}
         {`
-    .movie-search::placeholder {
-      color: #d8b4fe;
-      opacity: 1;
-      font-weight: 500;
-    }
-  `}
+         .movie-search::placeholder {
+         color: #d8b4fe;
+         opacity: 1;
+         font-weight: 500;
+        }
+
+        
+
+.dropdown-menu {
+  background: #111827 !important;
+}
+
+.dropdown-item {
+  color: white !important;
+}
+
+.dropdown-item:hover {
+  background: #7c3aed !important;
+  color: white !important;
+}
+
+.dropdown-item:focus {
+  background: #7c3aed !important;
+  color: white !important;
+}
+
+
+     `}
       </style>
     </div>
   );

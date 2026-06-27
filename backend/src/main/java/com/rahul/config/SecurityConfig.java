@@ -38,38 +38,35 @@ public class SecurityConfig {
             )
             .authorizeHttpRequests(auth -> auth
 
-            		   .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
 
-            		    .requestMatchers("/api/v1/auth/**").permitAll()
+                .requestMatchers("/api/v1/auth/**").permitAll()
 
-            		    .requestMatchers("/uploads/images/**").permitAll()
-            		    .requestMatchers("/images/**").permitAll()
+                .requestMatchers("/uploads/images/**").permitAll()
+                .requestMatchers("/images/**").permitAll()
 
-            		    .requestMatchers(HttpMethod.GET, "/api/v1/movies/**")
-            		    .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                // Public user-side APIs
+                .requestMatchers(HttpMethod.GET, "/api/v1/movies/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/reviews/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/theaters/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/admin/shows/movie/**").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/v1/admin/shows/theater/**").permitAll()
 
-            		    .requestMatchers(HttpMethod.GET, "/api/v1/admin/shows/movie/**")
-            		    .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                // Login required
+                .requestMatchers("/api/v1/bookings/**")
+                .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
 
-            		    .requestMatchers("/api/v1/bookings/**")
-            		    .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
-            		    
-            		    .requestMatchers(HttpMethod.GET, "/api/v1/seats/**")
-            		    .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
-            		    
-            		    .requestMatchers(HttpMethod.GET, "/api/v1/theaters/**")
-            		    .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
-            		    
-            		    .requestMatchers(HttpMethod.GET, "/api/v1/admin/shows/theater/**")
-            		    .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
-            		    
-            		    .requestMatchers("/api/v1/booking-seats/**")
-            		    .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
+                .requestMatchers(HttpMethod.GET, "/api/v1/seats/**")
+                .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
 
-            		    .requestMatchers("/api/v1/admin/**")
-            		    .hasAuthority("ROLE_ADMIN")
+                .requestMatchers("/api/v1/booking-seats/**")
+                .hasAnyAuthority("ROLE_USER", "ROLE_ADMIN")
 
-            		    .anyRequest().authenticated()
+                // Admin only
+                .requestMatchers("/api/v1/admin/**")
+                .hasAuthority("ROLE_ADMIN")
+
+                .anyRequest().authenticated()
             )
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 

@@ -20,7 +20,8 @@ export default function AppRouter() {
     <BrowserRouter>
       <Routes>
         {/* Public Routes */}
-        <Route path="/" element={<Login />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/" element={<UserHome />} />
         <Route path="/register" element={<Register />} />
 
         {/* Admin Routes */}
@@ -52,34 +53,40 @@ export default function AppRouter() {
         />
 
         {/* User Routes */}
+      
+
+        <Route path="/user" element={<UserHome />} />
+
+      
+
+        <Route path="/movie/:id" element={<UserMovieDetails />} />
+
+      
+
         <Route
-          path="/user"
+          path="/seat-selection/:showId"
           element={
             <ProtectedRoute allowedRole="USER">
-              <UserHome />
+              <SeatSelection />
             </ProtectedRoute>
           }
         />
-
-        <Route
-          path="/movie/:id"
-          element={
-            <ProtectedRoute allowedRole="USER">
-              <UserMovieDetails />
-            </ProtectedRoute>
-          }
-        />
-
-        <Route path="/seat-selection/:showId" element={<SeatSelection />} />
-
-        <Route path="/seat-selection/:showId" element={<SeatSelection />} />
 
         <Route path="/booking-success" element={<BookingSuccess />} />
 
         <Route path="/theaters" element={<TheaterSelection />} />
         <Route path="/theater/:theaterId/movies" element={<TheaterMovies />} />
 
-        <Route path="/my-bookings" element={<MyBookings />} />
+       
+
+        <Route
+          path="/my-bookings"
+          element={
+            <ProtectedRoute allowedRole="USER">
+              <MyBookings />
+            </ProtectedRoute>
+          }
+        />
       </Routes>
     </BrowserRouter>
   );

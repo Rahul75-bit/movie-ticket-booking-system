@@ -25,154 +25,207 @@ import com.rahul.response_wrapper.UniversalResponse;
 @Service
 public class BookingService {
 
-	  @Autowired
-	    private BookingRepository bookingRepository;
+    @Autowired
+    private BookingRepository bookingRepository;
 
-	    @Autowired
-	    private BookingSeatRepository bookingSeatRepository;
+    @Autowired
+    private BookingSeatRepository bookingSeatRepository;
 
-	    @Autowired
-	    private UserRepository userRepository;
+    @Autowired
+    private UserRepository userRepository;
 
-	    @Autowired
-	    private MoviesShowRepository movieShowRepository;
+    @Autowired
+    private MoviesShowRepository movieShowRepository;
 
-	    @Autowired
-	    private SeatRepository seatRepository;
+    @Autowired
+    private SeatRepository seatRepository;
 
-	    @Autowired
-	    private UniversalResponse response;
-   
-	    
-	    public ResponseEntity<ResponseWrapper> createBooking(
-	            Long userId,
-	            Long showId,
-	            List<Long> seatIds
-	    ) {
-	        Optional<User> userOptional = userRepository.findById(userId);
+    @Autowired
+    private UniversalResponse response;
 
-	        if (userOptional.isEmpty()) {
-	            return response.send("User not found with id " + userId, null, HttpStatus.NOT_FOUND);
-	        }
+    public ResponseEntity<ResponseWrapper> createBooking(
+            Long userId,
+            Long showId,
+            List<Long> seatIds
+    ) {
+        if (seatIds == null || seatIds.isEmpty()) {
+            return response.send(
+                    "Please select at least one seat",
+                    null,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
 
-	        Optional<MovieShow> showOptional = movieShowRepository.findById(showId);
+        Optional<User> userOptional = userRepository.findById(userId);
 
-	        if (showOptional.isEmpty()) {
-	            return response.send("Show not found with id " + showId, null, HttpStatus.NOT_FOUND);
-	        }
+        if (userOptional.isEmpty()) {
+            return response.send(
+                    "User not found with id " + userId,
+                    null,
+                    HttpStatus.NOT_FOUND
+            );
+        }
 
-	        MovieShow movieShow = showOptional.get();
+        Optional<MovieShow> showOptional = movieShowRepository.findById(showId);
 
-	        for (Long seatId : seatIds) {
-	            Optional<Seat> seatOptional = seatRepository.findById(seatId);
+        if (showOptional.isEmpty()) {
+            return response.send(
+                    "Show not found with id " + showId,
+                    null,
+                    HttpStatus.NOT_FOUND
+            );
+        }
 
-	            if (seatOptional.isEmpty()) {
-	                return response.send("Seat not found with id " + seatId, null, HttpStatus.NOT_FOUND);
-	            }
+        User user = userOptional.get();
+        MovieShow movieShow = showOptional.get();
 
-	            boolean alreadyBooked = bookingSeatRepository
-	                    .existsBySeatSeatIdAndBookingMovieShowShowIdAndBookingBookingStatus(
-	                            seatId,
-	                            showId,
-	                            "CONFIRMED"
-	                    );
+        for (Long seatId : seatIds) {
+            Optional<Seat> seatOptional = seatRepository.findById(seatId);
 
-	            if (alreadyBooked) {
-	                return response.send(
-	                        "Seat already booked for this show: " + seatOptional.get().getSeatNumber(),
-	                        null,
-	                        HttpStatus.BAD_REQUEST
-	                );
-	            }
-	        }
+            if (seatOptional.isEmpty()) {
+                return response.send(
+                        "Seat not found with id " + seatId,
+                        null,
+                        HttpStatus.NOT_FOUND
+                );
+            }
 
-	        double totalAmount = movieShow.getTicketPrice() * seatIds.size();
+            boolean alreadyBooked = bookingSeatRepository
+                    .existsBySeatSeatIdAndBookingMovieShowShowIdAndBookingBookingStatus(
+                            seatId,
+                            showId,
+                            "CONFIRMED"
+                    );
 
-	        Booking booking = new Booking();
-	        booking.setUser(userOptional.get());
-	        booking.setMovieShow(movieShow);
-	        booking.setBookingDate(LocalDateTime.now());
-	        booking.setTotalAmount(totalAmount);
-	        booking.setBookingStatus("CONFIRMED");
+            if (alreadyBooked) {
+                return response.send(
+                        "Seat already booked for this show: "
+                                + seatOptional.get().getSeatNumber(),
+                        null,
+                        HttpStatus.BAD_REQUEST
+                );
+            }
+        }
 
-	        Booking savedBooking = bookingRepository.save(booking);
+        double totalAmount = movieShow.getTicketPrice() * seatIds.size();
 
-	        for (Long seatId : seatIds) {
-	            Seat seat = seatRepository.findById(seatId).get();
+        Booking booking = new Booking();
+        booking.setUser(user);
+        booking.setMovieShow(movieShow);
+        booking.setBookingDate(LocalDateTime.now());
+        booking.setBookingStatus("CONFIRMED");
+        booking.setTotalAmount(totalAmount);
 
-	            BookingSeat bookingSeat = new BookingSeat();
-	            bookingSeat.setBooking(savedBooking);
-	            bookingSeat.setSeat(seat);
+        booking.setNumberOfTickets(seatIds.size());
+        booking.setEmail(user.getEmail());
+        booking.setPaymentStatus("SUCCESS");
+        booking.setHiddenByUser(false);
 
-	            bookingSeatRepository.save(bookingSeat);
-	        }
+        Booking savedBooking = bookingRepository.save(booking);
 
-	        return response.send("Booking confirmed successfully", savedBooking, HttpStatus.OK);
-	    }
+        for (Long seatId : seatIds) {
+            Seat seat = seatRepository.findById(seatId).get();
 
-	    public ResponseEntity<ResponseWrapper> getAllBookings() {
-	        return response.send("Bookings found successfully", bookingRepository.findAll(), HttpStatus.OK);
-	    }
+            BookingSeat bookingSeat = new BookingSeat();
+            bookingSeat.setBooking(savedBooking);
+            bookingSeat.setSeat(seat);
 
-	    public ResponseEntity<ResponseWrapper> getBookingById(Long bookingId) {
-	        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
+            bookingSeatRepository.save(bookingSeat);
+        }
 
-	        if (bookingOptional.isPresent()) {
-	            return response.send("Booking found successfully", bookingOptional.get(), HttpStatus.OK);
-	        }
+        return response.send(
+                "Booking confirmed successfully",
+                savedBooking,
+                HttpStatus.OK
+        );
+    }
 
-	        return response.send("Booking not found with id " + bookingId, null, HttpStatus.NOT_FOUND);
-	    }
+    public ResponseEntity<ResponseWrapper> getAllBookings() {
+        return response.send(
+                "Bookings found successfully",
+                bookingRepository.findAll(),
+                HttpStatus.OK
+        );
+    }
 
-//	    public ResponseEntity<ResponseWrapper> getBookingsByUserId(Long userId) {
-//	        return response.send(
-//	                "User bookings found successfully",
-//	                bookingRepository.findByUserUserId(userId),
-//	                HttpStatus.OK
-//	        );
-//	    }
-	    
-	    public ResponseEntity<ResponseWrapper> getBookingsByUserId(Long userId) {
-	        return response.send(
-	                "User bookings found successfully",
-	                bookingRepository.findByUserUserIdAndHiddenByUserFalse(userId),
-	                HttpStatus.OK
-	        );
-	    }
+    public ResponseEntity<ResponseWrapper> getBookingById(Long bookingId) {
+        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
 
+        if (bookingOptional.isPresent()) {
+            return response.send(
+                    "Booking found successfully",
+                    bookingOptional.get(),
+                    HttpStatus.OK
+            );
+        }
 
-	    
-	    public ResponseEntity<ResponseWrapper> cancelBooking(Long bookingId) {
-	        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
+        return response.send(
+                "Booking not found with id " + bookingId,
+                null,
+                HttpStatus.NOT_FOUND
+        );
+    }
 
-	        if (bookingOptional.isEmpty()) {
-	            return response.send("Booking not found with id " + bookingId, null, HttpStatus.NOT_FOUND);
-	        }
+    public ResponseEntity<ResponseWrapper> getBookingsByUserId(Long userId) {
+        return response.send(
+                "User bookings found successfully",
+                bookingRepository.findByUserUserIdAndHiddenByUserFalse(userId),
+                HttpStatus.OK
+        );
+    }
 
-	        Booking booking = bookingOptional.get();
-	        booking.setBookingStatus("CANCELLED");
+    public ResponseEntity<ResponseWrapper> cancelBooking(Long bookingId) {
+        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
 
-	        Booking updatedBooking = bookingRepository.save(booking);
+        if (bookingOptional.isEmpty()) {
+            return response.send(
+                    "Booking not found with id " + bookingId,
+                    null,
+                    HttpStatus.NOT_FOUND
+            );
+        }
 
-	        return response.send("Booking cancelled successfully", updatedBooking, HttpStatus.OK);
-	    }
-	    
-	    public ResponseEntity<ResponseWrapper> hideBooking(Long bookingId) {
-	        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
+        Booking booking = bookingOptional.get();
+        booking.setBookingStatus("CANCELLED");
+        booking.setPaymentStatus("FAILED");
 
-	        if (bookingOptional.isEmpty()) {
-	            return response.send("Booking not found with id " + bookingId, null, HttpStatus.NOT_FOUND);
-	        }
+        Booking updatedBooking = bookingRepository.save(booking);
 
-	        Booking booking = bookingOptional.get();
+        return response.send(
+                "Booking cancelled successfully",
+                updatedBooking,
+                HttpStatus.OK
+        );
+    }
 
-	        if (!"CANCELLED".equals(booking.getBookingStatus())) {
-	            return response.send("Only cancelled bookings can be removed", null, HttpStatus.BAD_REQUEST);
-	        }
+    public ResponseEntity<ResponseWrapper> hideBooking(Long bookingId) {
+        Optional<Booking> bookingOptional = bookingRepository.findById(bookingId);
 
-	        booking.setHiddenByUser(true);
-	        bookingRepository.save(booking);
+        if (bookingOptional.isEmpty()) {
+            return response.send(
+                    "Booking not found with id " + bookingId,
+                    null,
+                    HttpStatus.NOT_FOUND
+            );
+        }
 
-	        return response.send("Booking removed successfully", booking, HttpStatus.OK);
-	    }
+        Booking booking = bookingOptional.get();
+
+        if (!"CANCELLED".equals(booking.getBookingStatus())) {
+            return response.send(
+                    "Only cancelled bookings can be removed",
+                    null,
+                    HttpStatus.BAD_REQUEST
+            );
+        }
+
+        booking.setHiddenByUser(true);
+        bookingRepository.save(booking);
+
+        return response.send(
+                "Booking removed successfully",
+                booking,
+                HttpStatus.OK
+        );
+    }
 }
